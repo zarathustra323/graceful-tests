@@ -1,4 +1,4 @@
 # Graceful Shutdown and Health Check Tests
 
 ## Running
-To start execute either `docker-compose up` or `docker-compose run --service-ports app`. To stop all services, execute `docker-compose down`
+To start, execute `docker-compose up`. To stop, execute `docker-compose down`.
