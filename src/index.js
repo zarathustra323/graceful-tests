@@ -23,21 +23,27 @@ const run = async () => {
     },
     onSignal: async () => {
       log('> Cleaning up...');
-      // Clean logic, like closing DB connections...
+      // Cleanup logic, like closing DB connections...
     },
     onShutdown: () => {
       log('> Cleanup finished. Shutting down.');
     },
   });
 
+  // Start any services that need to connect before the server listens...
+  // Generally speaking, connections should be wrapped with sane retries...
+  await Promise.all([]);
+
   server.listen(80, () => {
     log(`> Ready on http://localhost:${PORT}`);
   });
 };
 
+// Simulate future NodeJS behavior by throwing unhandled Promise rejections.
 process.on('unhandledRejection', (e) => {
   log('> Unhandled promise rejection. Throwing error...');
   throw e;
 });
 
+// Run the app and immediately throw any startup errors.
 run().catch(e => setImmediate(() => { throw e; }));
