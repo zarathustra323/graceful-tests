@@ -1,15 +1,12 @@
 const { MongoClient } = require('mongodb');
+const retry = require('p-retry');
 const pkg = require('../package.json');
 
 const { log } = console;
 const { MONGO_URI } = process.env;
 
 let promise;
-
-/**
- * @todo Experiment with connection settings.
- */
-module.exports = async () => {
+const connect = async () => {
   if (!promise) {
     log('> Attempting to connect to MongoDB...');
     promise = MongoClient.connect(MONGO_URI, {
@@ -31,3 +28,12 @@ module.exports = async () => {
   const client = await promise;
   return client;
 };
+
+module.exports = retry(connect, {
+  onFailedAttempt: (err) => {
+    log(`> MongoDB connect attempt ${err.attemptNumber} failed. There are ${err.attemptsLeft} attempts left.`);
+  },
+  retries: 4,
+  minTimeout: 200,
+  maxTimeout: 1000,
+});

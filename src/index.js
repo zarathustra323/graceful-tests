@@ -13,11 +13,11 @@ const run = async () => {
   // Start any services that need to connect before the server listens...
   // Generally speaking, connections should be wrapped with sane retries...
   const [mongoClient] = await Promise.all([
-    mongodb(), // MongoDB doesn't automatically retry on failure??
+    mongodb,
   ]);
 
   createTerminus(server, {
-    timeout: 1000, // Web server timeout (for keep-alive sockets, etc).
+    timeout: 1000, // Web server shutdown timeout (for keep-alive sockets, etc).
     signals: ['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGQUIT'],
     healthChecks: {
       /**

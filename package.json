@@ -12,7 +12,8 @@
   "dependencies": {
     "@godaddy/terminus": "^4.1.0",
     "express": "^4.16.4",
-    "mongodb": "^3.1.10"
+    "mongodb": "^3.1.10",
+    "p-retry": "^2.0.0"
   },
   "devDependencies": {
     "eslint": "^5.9.0",
