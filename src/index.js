@@ -1,6 +1,8 @@
 const http = require('http');
-const { createTerminus } = require('@godaddy/terminus');
+const { createTerminus, HealthCheckError } = require('@godaddy/terminus');
 const app = require('./app');
+const mongodb = require('./mongodb');
+const check = require('./checks');
 
 const { log } = console;
 const { PORT } = process.env;
@@ -8,8 +10,14 @@ const { PORT } = process.env;
 const server = http.createServer(app);
 
 const run = async () => {
+  // Start any services that need to connect before the server listens...
+  // Generally speaking, connections should be wrapped with sane retries...
+  const [mongoClient] = await Promise.all([
+    mongodb(), // MongoDB doesn't automatically retry on failure??
+  ]);
+
   createTerminus(server, {
-    timeout: 1000,
+    timeout: 1000, // Web server timeout (for keep-alive sockets, etc).
     signals: ['SIGTERM', 'SIGINT', 'SIGHUP', 'SIGQUIT'],
     healthChecks: {
       /**
@@ -18,24 +26,29 @@ const run = async () => {
        * Should check external services, like the db, redis, etc.
        */
       '/_health': async () => {
-        throw new Error('Something bad');
+        const errors = [];
+        return Promise.all([
+          check.mongodb(mongoClient),
+        ].map(p => p.catch((err) => {
+          errors.push(err);
+        }))).then((res) => {
+          if (errors.length) throw new HealthCheckError('Unhealthy', errors);
+          return res;
+        });
       },
     },
     onSignal: async () => {
       log('> Cleaning up...');
       // Cleanup logic, like closing DB connections...
+      await Promise.all([
+        mongoClient.close().then(() => log('> MongoDB gracefully closed.')),
+      ]);
     },
-    onShutdown: () => {
-      log('> Cleanup finished. Shutting down.');
-    },
+    onShutdown: () => log('> Cleanup finished. Shutting down.'),
   });
 
-  // Start any services that need to connect before the server listens...
-  // Generally speaking, connections should be wrapped with sane retries...
-  await Promise.all([]);
-
   server.listen(80, () => {
-    log(`> Ready on http://localhost:${PORT}`);
+    log(`> Ready on http://0.0.0.0:${PORT}`);
   });
 };
 

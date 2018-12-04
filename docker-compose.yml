@@ -19,7 +19,7 @@ services:
     environment:
       YARN_CACHE_FOLDER: /.yarn-cache
       NODE_ENV: development
-      MONGO_DSN: ${MONGO_DSN-mongodb://mongodb:27017}
+      MONGO_URI: ${MONGO_URI-mongodb://mongodb:27017}
       PORT: ${PORT-6999}
 
   mongodb:
