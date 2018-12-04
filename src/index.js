@@ -9,8 +9,8 @@ const { PORT } = process.env;
 
 const server = http.createServer(app);
 
-const run = async () => {
-  // Start any services that need to connect before the server listens...
+const boot = async () => {
+  // Start any services that need to connect before the web server listens...
   // Generally speaking, connections should be wrapped with sane retries...
   const [mongoClient] = await Promise.all([
     mongodb,
@@ -58,5 +58,5 @@ process.on('unhandledRejection', (e) => {
   throw e;
 });
 
-// Run the app and immediately throw any startup errors.
-run().catch(e => setImmediate(() => { throw e; }));
+// Boot the app and immediately throw any startup errors.
+boot().catch(e => setImmediate(() => { throw e; }));
