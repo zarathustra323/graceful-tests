@@ -19,7 +19,7 @@ const connect = async () => {
       bufferMaxEntries: -1, // Default -1
     }).then((client) => {
       log('> MongoDB connected to', MONGO_URI);
-      client.on('close', () => log('> MongoDB lost connection.'));
+      client.on('close', () => log('> MongoDB connection closed.'));
       client.on('reconnect', () => log('> MongoDB reconnected.'));
       client.on('reconnectFailed', () => log('> MongoDB gave up reconnecting. DB operations are dead.'));
       return client;
