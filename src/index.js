@@ -2,7 +2,7 @@ const http = require('http');
 const { createTerminus, HealthCheckError } = require('@godaddy/terminus');
 const app = require('./app');
 const mongodb = require('./mongodb');
-const redis = require('./redis');
+const ioredis = require('./ioredis');
 
 const { log } = console;
 const { PORT } = process.env;
@@ -14,12 +14,12 @@ const boot = async () => {
   // Generally speaking, connections should be wrapped with sane retries...
   await Promise.all([
     mongodb.connect().then((client) => {
-      log('> MongoDB connected to', client.s.url);
+      log('> MongoDB (mongodb) connected to', client.s.url);
       return client;
     }),
-    redis.connect().then(() => {
-      const { host, port, db } = redis.options;
-      log('> Redis connected to', `redis://${host}:${port}/${db}`);
+    ioredis.connect().then(() => {
+      const { host, port, db } = ioredis.options;
+      log('> Redis (ioredis) connected to', `redis://${host}:${port}/${db}`);
     }),
   ]);
 
@@ -35,8 +35,8 @@ const boot = async () => {
       '/_health': async () => {
         const errors = [];
         return Promise.all([
-          mongodb.db('test').command({ ping: 1 }).then(() => 'MongoDB pinged.'),
-          redis.ping().then(() => 'Redis pinged.'),
+          mongodb.db('test').command({ ping: 1 }).then(() => 'MongoDB (mongodb) pinged.'),
+          ioredis.ping().then(() => 'Redis (ioredis) pinged.'),
         ].map(p => p.catch((err) => {
           errors.push(err);
         }))).then((res) => {
@@ -50,8 +50,8 @@ const boot = async () => {
       // Cleanup logic, like closing DB connections...
       try {
         await Promise.all([
-          mongodb.close().then(() => log('> MongoDB gracefully closed.')),
-          redis.quit().then(() => log('> Redis gracefully closed.')),
+          mongodb.close().then(() => log('> MongoDB (mongodb) gracefully closed.')),
+          ioredis.quit().then(() => log('> Redis (ioredis) gracefully closed.')),
         ]);
       } catch (e) {
         log('> Cleanup ERRORED!', e);
