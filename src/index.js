@@ -1,5 +1,6 @@
 const http = require('http');
 const { createTerminus, HealthCheckError } = require('@godaddy/terminus');
+const pkg = require('../package.json');
 const app = require('./app');
 const mongodb = require('./mongodb');
 const ioredis = require('./ioredis');
@@ -10,7 +11,7 @@ const { PORT } = process.env;
 const server = http.createServer(app);
 
 const boot = async () => {
-  // Redis events.
+  // // Redis events.
   ioredis.on('connect', () => {
     const { host, port, db } = ioredis.options;
     log('> Redis (ioredis) connected to', `redis://${host}:${port}/${db}`);
@@ -33,9 +34,18 @@ const boot = async () => {
   await Promise.all([
     mongodb.connect().then((client) => {
       log('> MongoDB (mongodb) connected to', client.s.url);
+      client.on('fullsetup', () => log('> MongoDB all servers connected.'));
+      client.topology.on('left', data => log(`> A ${data} MongoDB server left the set.`));
+      client.topology.on('joined', data => log(`> A ${data} MongoDB server joined the set.`));
+
       return client;
     }),
     ioredis.connect(),
+  ]);
+
+  const pingMongo = () => Promise.all([
+    mongodb.db('test').command({ ping: 1 }),
+    mongodb.db('test').collection('pings').updateOne({ _id: pkg.name }, { $set: { last: new Date() } }, { upsert: true, w: 1, wtimeout: 200 }),
   ]);
 
   createTerminus(server, {
@@ -50,12 +60,15 @@ const boot = async () => {
       '/_health': async () => {
         const errors = [];
         return Promise.all([
-          mongodb.db('test').command({ ping: 1 }).then(() => 'MongoDB (mongodb) pinged.'),
+          pingMongo().then(() => 'MongoDB (mongodb) pinged.'),
           ioredis.ping().then(() => 'Redis (ioredis) pinged.'),
         ].map(p => p.catch((err) => {
           errors.push(err);
         }))).then((res) => {
-          if (errors.length) throw new HealthCheckError('Unhealthy', errors.map(e => e.message));
+          if (errors.length) {
+            log(errors);
+            throw new HealthCheckError('Unhealthy', errors.map(e => e.message));
+          }
           return res;
         });
       },

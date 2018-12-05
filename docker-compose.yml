@@ -10,7 +10,7 @@ services:
       - ./node_modules:/app/node_modules:delegated
       - yarn-cache:/.yarn-cache
     working_dir: /app
-    command: ['sh', '-c', 'yarn && node_modules/.bin/gulp']
+    command: ['bash', '-c', 'yarn && sleep 5; node_modules/.bin/gulp']
     depends_on:
       - mongodb
     restart: on-failure
@@ -19,16 +19,55 @@ services:
     environment:
       YARN_CACHE_FOLDER: /.yarn-cache
       NODE_ENV: development
-      MONGO_URI: ${MONGO_URI-mongodb://mongodb:27017}
+      MONGO_URI: ${MONGO_URI-mongodb://mongodb01:27017,mongodb02:27017,mongodb03:27017/?replicaSet=rs0}
       REDIS_URI: ${REDIS_URI-redis://redis:6379/0}
       PORT: ${PORT-6999}
 
   mongodb:
     tty: true
     image: mongo:3.4
+    depends_on:
+      - mongodb01
+      - mongodb02
+      - mongodb03
+    volumes:
+      - ./etc/mongosetup.sh:/mongosetup.sh
+    command: ['bash', '-c', 'sleep 1; /mongosetup.sh']
+
+  mongodb01:
+    tty: true
+    image: mongo:3.4
     restart: always
     volumes:
-      - mongodb:/data/db
+      - mongodb01:/data/db
+      - ./etc/mongod.conf:/etc/mongod.conf
+    command: ['mongod', '--config', '/etc/mongod.conf']
+    ports:
+      - "30001:27017"
+
+  mongodb02:
+    image: mongo:3.4
+    restart: always
+    depends_on:
+      - mongodb01
+    volumes:
+      - mongodb02:/data/db
+      - ./etc/mongod.conf:/etc/mongod.conf
+    command: ['bash', '-c', 'sleep 2; mongod --config /etc/mongod.conf']
+    ports:
+      - "30002:27017"
+
+  mongodb03:
+    image: mongo:3.4
+    restart: always
+    depends_on:
+      - mongodb03
+    volumes:
+      - mongodb03:/data/db
+      - ./etc/mongod.conf:/etc/mongod.conf
+    command: ['bash', '-c', 'sleep 4; mongod --config /etc/mongod.conf']
+    ports:
+      - "30003:27017"
 
   redis:
     tty: true
@@ -37,4 +76,6 @@ services:
 
 volumes:
   yarn-cache: {}
-  mongodb: {}
+  mongodb01: {}
+  mongodb02: {}
+  mongodb03: {}
