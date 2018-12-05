@@ -16,7 +16,10 @@ const serve = async () => {
   if (node) node.kill();
   node = await spawn('node', ['src/index.js'], { stdio: 'inherit' });
   node.on('exit', (code, signal) => {
-    log('> Node subprocess exited', code, signal);
+    const exited = [];
+    if (code) exited.push(`code ${code}`);
+    if (signal) exited.push(`signal ${signal}`);
+    log(`> Node subprocess (via Gulp) exited with ${exited.join(' ')}`);
   });
 };
 
