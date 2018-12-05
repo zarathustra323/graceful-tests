@@ -1,6 +1,8 @@
 # Graceful Shutdown and Health Check Tests
 
 ## Running
+_You must have Docker Engine 18.06.0+ to run this application (due to compose file format 3.7)_
+
 To start, execute `docker-compose up`. To stop, execute `docker-compose down`.
 
 ## Yarn
