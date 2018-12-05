@@ -18,17 +18,17 @@ mongo --host mongodb01:27017 <<EOF
     "version": 1,
     "members": [
       {
-        "_id": 1,
+        "_id": 0,
         "host": "mongodb01:27017",
         "priority": 2
       },
       {
-        "_id": 2,
+        "_id": 1,
         "host": "mongodb02:27017",
         "priority": 1
       },
       {
-        "_id": 3,
+        "_id": 2,
         "host": "mongodb03:27017",
         "priority": 1
       }
