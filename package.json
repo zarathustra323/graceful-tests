@@ -13,8 +13,7 @@
     "@godaddy/terminus": "^4.1.0",
     "express": "^4.16.4",
     "ioredis": "^4.2.0",
-    "mongodb": "^3.1.10",
-    "p-retry": "^2.0.0"
+    "mongodb": "^3.1.10"
   },
   "devDependencies": {
     "eslint": "^5.9.0",
