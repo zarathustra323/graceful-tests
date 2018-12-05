@@ -3,7 +3,6 @@ const { createTerminus, HealthCheckError } = require('@godaddy/terminus');
 const app = require('./app');
 const mongodb = require('./mongodb');
 const redis = require('./redis');
-const check = require('./checks');
 
 const { log } = console;
 const { PORT } = process.env;
@@ -13,9 +12,15 @@ const server = http.createServer(app);
 const boot = async () => {
   // Start any services that need to connect before the web server listens...
   // Generally speaking, connections should be wrapped with sane retries...
-  const [mongoClient, redisClient] = await Promise.all([
-    mongodb,
-    redis,
+  await Promise.all([
+    mongodb.connect().then((client) => {
+      log('> MongoDB connected to', client.s.url);
+      return client;
+    }),
+    redis.connect().then(() => {
+      const { host, port, db } = redis.options;
+      log('> Redis connected to', `redis://${host}:${port}/${db}`);
+    }),
   ]);
 
   createTerminus(server, {
@@ -30,8 +35,8 @@ const boot = async () => {
       '/_health': async () => {
         const errors = [];
         return Promise.all([
-          check.mongodb(mongoClient),
-          check.redis(redisClient),
+          mongodb.db('test').command({ ping: 1 }).then(() => 'MongoDB pinged.'),
+          redis.ping().then(() => 'Redis pinged.'),
         ].map(p => p.catch((err) => {
           errors.push(err);
         }))).then((res) => {
@@ -43,10 +48,15 @@ const boot = async () => {
     onSignal: async () => {
       log('> Cleaning up...');
       // Cleanup logic, like closing DB connections...
-      await Promise.all([
-        mongoClient.close().then(() => log('> MongoDB gracefully closed.')),
-        redisClient.quit().then(() => log('> Redis gracefully closed.')),
-      ]);
+      try {
+        await Promise.all([
+          mongodb.close().then(() => log('> MongoDB gracefully closed.')),
+          redis.quit().then(() => log('> Redis gracefully closed.')),
+        ]);
+      } catch (e) {
+        log('> Cleanup ERRORED!', e);
+        throw e;
+      }
     },
     onShutdown: () => log('> Cleanup finished. Shutting down.'),
   });
