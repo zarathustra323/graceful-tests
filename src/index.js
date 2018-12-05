@@ -2,6 +2,7 @@ const http = require('http');
 const { createTerminus, HealthCheckError } = require('@godaddy/terminus');
 const app = require('./app');
 const mongodb = require('./mongodb');
+const redis = require('./redis');
 const check = require('./checks');
 
 const { log } = console;
@@ -12,8 +13,9 @@ const server = http.createServer(app);
 const boot = async () => {
   // Start any services that need to connect before the web server listens...
   // Generally speaking, connections should be wrapped with sane retries...
-  const [mongoClient] = await Promise.all([
+  const [mongoClient, redisClient] = await Promise.all([
     mongodb,
+    redis,
   ]);
 
   createTerminus(server, {
@@ -42,6 +44,7 @@ const boot = async () => {
       // Cleanup logic, like closing DB connections...
       await Promise.all([
         mongoClient.close().then(() => log('> MongoDB gracefully closed.')),
+        redisClient.quit().then(() => log('> Redis gracefully closed.')),
       ]);
     },
     onShutdown: () => log('> Cleanup finished. Shutting down.'),
