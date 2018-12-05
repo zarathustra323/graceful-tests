@@ -31,6 +31,7 @@ const boot = async () => {
         const errors = [];
         return Promise.all([
           check.mongodb(mongoClient),
+          check.redis(redisClient),
         ].map(p => p.catch((err) => {
           errors.push(err);
         }))).then((res) => {

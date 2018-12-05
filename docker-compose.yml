@@ -4,7 +4,7 @@ services:
   app:
     tty: true
     init: true
-    image: node:10.13-alpine
+    image: node:10.13
     volumes:
       - .:/app:cached
       - ./node_modules:/app/node_modules:delegated

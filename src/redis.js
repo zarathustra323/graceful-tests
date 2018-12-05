@@ -7,4 +7,7 @@ const redis = new Redis(REDIS_URI, {
   lazyConnect: true,
 });
 
-module.exports = redis.connect().then(() => log('> Redis conencted to', REDIS_URI));
+module.exports = redis.connect().then(() => {
+  log('> Redis connected to', REDIS_URI);
+  return redis;
+});
