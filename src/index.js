@@ -10,6 +10,24 @@ const { PORT } = process.env;
 const server = http.createServer(app);
 
 const boot = async () => {
+  // Redis events.
+  ioredis.on('connect', () => {
+    const { host, port, db } = ioredis.options;
+    log('> Redis (ioredis) connected to', `redis://${host}:${port}/${db}`);
+  });
+  ioredis.on('close', () => log('> Redis (ioredis) connection closed.'));
+  let totalReconTime = 0;
+  // When the end event fires, Redis will no longer try to reconnect.
+  // This should throw hard to force a restart of the entire application.
+  ioredis.on('end', () => {
+    log('> Redis (ioredis) will no longer reconnect.');
+    throw new Error(`Redis will no longer attempt to reconnect. Retried for ${totalReconTime}ms`);
+  });
+  ioredis.on('reconnecting', (ms) => {
+    totalReconTime += ms;
+    log(`> Redis (ioredis) will attempt to reconnect in ${ms}ms`);
+  });
+
   // Start any services that need to connect before the web server listens...
   // Generally speaking, connections should be wrapped with sane retries...
   await Promise.all([
@@ -17,10 +35,7 @@ const boot = async () => {
       log('> MongoDB (mongodb) connected to', client.s.url);
       return client;
     }),
-    ioredis.connect().then(() => {
-      const { host, port, db } = ioredis.options;
-      log('> Redis (ioredis) connected to', `redis://${host}:${port}/${db}`);
-    }),
+    ioredis.connect(),
   ]);
 
   createTerminus(server, {
@@ -40,7 +55,7 @@ const boot = async () => {
         ].map(p => p.catch((err) => {
           errors.push(err);
         }))).then((res) => {
-          if (errors.length) throw new HealthCheckError('Unhealthy', errors);
+          if (errors.length) throw new HealthCheckError('Unhealthy', errors.map(e => e.message));
           return res;
         });
       },
