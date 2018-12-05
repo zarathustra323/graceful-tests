@@ -20,6 +20,7 @@ services:
       YARN_CACHE_FOLDER: /.yarn-cache
       NODE_ENV: development
       MONGO_URI: ${MONGO_URI-mongodb://mongodb:27017}
+      REDIS_URI: ${REDIS_URI-redis://redis:6379/0}
       PORT: ${PORT-6999}
 
   mongodb:
@@ -28,6 +29,11 @@ services:
     restart: always
     volumes:
       - mongodb:/data/db
+
+  redis:
+    tty: true
+    image: redis:5-alpine
+    restart: always
 
 volumes:
   yarn-cache: {}
