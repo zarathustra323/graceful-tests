@@ -8,6 +8,7 @@ const endpoint = (req, path) => `${req.protocol}://${join(req.get('host'), path)
 
 app.get('/', (req, res) => {
   res.json({
+    health: endpoint(req, '_health'),
     mongodb: {
       read: endpoint(req, 'mongodb'),
       write: endpoint(req, 'mongodb/write'),
