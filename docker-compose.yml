@@ -48,8 +48,6 @@ services:
   mongodb02:
     image: mongo:3.4
     restart: always
-    depends_on:
-      - mongodb01
     volumes:
       - mongodb02:/data/db
       - ./etc/mongod.conf:/etc/mongod.conf
@@ -60,8 +58,6 @@ services:
   mongodb03:
     image: mongo:3.4
     restart: always
-    depends_on:
-      - mongodb03
     volumes:
       - mongodb03:/data/db
       - ./etc/mongod.conf:/etc/mongod.conf
